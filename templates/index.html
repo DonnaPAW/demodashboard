@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event- &amp; Punkte-Dashboard</title>
+<style>
+  :root {
+    --magenta:#ec058c; --magenta-dark:#c00475; --pink:#faaca8; --pink-light:#fdeef3;
+    --schwarz:#000; --weiss:#fff; --grau:#d6d6d6; --hellgrau:#f9f9f9; --text:#313131;
+    --ok:#1a9e77; --warn:#eab308; --bad:#e11d48;
+  }
+  * { box-sizing:border-box; }
+  body { font-family:'Helvetica Neue',Arial,Helvetica,sans-serif; margin:0; background:var(--weiss); color:var(--text); line-height:1.5; }
+  header { background:var(--weiss); color:var(--schwarz); padding:22px 40px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:4px solid var(--magenta); }
+  header h1 { margin:0; font-size:30px; font-weight:800; letter-spacing:-.5px; text-transform:uppercase; color:var(--schwarz); }
+  header h1 span { color:var(--magenta); }
+  header .sub { font-size:13px; color:#6b7280; letter-spacing:.3px; }
+  .btn { background:var(--magenta); color:var(--weiss); border:none; padding:10px 20px; border-radius:4px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; font-size:13.5px; text-transform:uppercase; letter-spacing:.5px; }
+  .btn:hover { background:var(--magenta-dark); }
+  .btn.ghost { background:transparent; color:var(--schwarz); border:2px solid var(--schwarz); padding:8px 18px; }
+  .btn.ghost:hover { border-color:var(--magenta); color:var(--magenta); background:transparent; }
+  main { padding:30px 40px; max-width:1280px; margin:0 auto; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0; margin-bottom:28px; border:1px solid var(--grau); border-radius:6px; overflow:hidden; }
+  .kpi { background:var(--weiss); padding:18px 20px; border-right:1px solid var(--grau); }
+  .kpi:last-child { border-right:none; }
+  .kpi .v { font-size:28px; font-weight:800; color:var(--schwarz); }
+  .kpi .v b { color:var(--magenta); }
+  .kpi .l { font-size:12px; color:#6b7280; margin-top:2px; text-transform:uppercase; letter-spacing:.6px; }
+  .card { background:var(--weiss); border:1px solid var(--grau); border-radius:6px; padding:24px 26px; margin-bottom:26px; }
+  .card h2 { margin:0 0 16px; font-size:19px; font-weight:800; color:var(--schwarz); text-transform:uppercase; letter-spacing:.3px; padding-left:12px; border-left:5px solid var(--magenta); }
+  .filterbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+  .filterbar select, .filterbar input { padding:11px 14px; border:1px solid var(--grau); border-radius:4px; font-size:14px; background:var(--hellgrau); color:var(--schwarz); min-width:240px; }
+  .filterbar select:focus, .filterbar input:focus { outline:2px solid var(--magenta); outline-offset:-1px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { background:var(--schwarz); color:var(--weiss); text-align:left; padding:10px 12px; font-weight:700; font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; }
+  td { padding:10px 12px; border-bottom:1px solid var(--grau); vertical-align:top; }
+  tr:nth-child(even) td { background:var(--pink-light); }
+  .bar-wrap { background:var(--hellgrau); border:1px solid var(--grau); border-radius:4px; height:16px; width:100%; min-width:110px; overflow:hidden; }
+  .bar { height:100%; background:linear-gradient(90deg, var(--magenta), var(--pink)); border-radius:3px; }
+  .bar.warn { background:var(--warn); }
+  .bar.bad { background:var(--bad); }
+  .pct { font-size:12.5px; color:#6b7280; white-space:nowrap; font-weight:600; }
+  .company-detail { display:none; }
+  .company-detail.active { display:block; }
+  .detail-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:12px; margin-bottom:22px; }
+  .detail-kpis .kpi { border:1px solid var(--grau); border-radius:6px; background:var(--hellgrau); }
+  .badge { display:inline-block; background:var(--pink-light); color:var(--magenta-dark); border:1px solid var(--pink); border-radius:3px; padding:2px 9px; font-size:12px; font-weight:600; margin:2px 4px 2px 0; }
+  .muted { color:#9ca3af; }
+  .footnote { text-align:center; color:#9ca3af; font-size:12px; padding:10px 0 26px; text-transform:uppercase; letter-spacing:1px; }
+  .company-link { color:var(--schwarz); cursor:pointer; font-weight:700; border-bottom:2px solid var(--pink); }
+  .company-link:hover { color:var(--magenta); border-color:var(--magenta); }
+  .top-controls { display:flex; gap:8px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Event- &amp; Punkte-<span>Dashboard</span></h1>
+    <div class="sub">Demo · fiktive Daten · Punktekontingent 200 Punkte je Unternehmen</div>
+  </div>
+  <div class="top-controls">
+    <a class="btn" href="/pdf/overview">PDF: Gesamtauswertung</a>
+  </div>
+</header>
+
+<main>
+  <div class="kpis">
+    <div class="kpi"><div class="v">{{ companies|length }}</div><div class="l">Unternehmen</div></div>
+    <div class="kpi"><div class="v">{{ total_events }}</div><div class="l">Events &amp; Workshops</div></div>
+    <div class="kpi"><div class="v">{{ total_bookings }}</div><div class="l">Buchungen (Hosts + Gäste)</div></div>
+    <div class="kpi"><div class="v">{{ total_used }} <b>/ {{ total_contingent }}</b></div><div class="l">Punkte verbraucht / Kontingent gesamt</div></div>
+  </div>
+
+  <div class="filterbar">
+    <select id="companySelect" onchange="applyFilter()">
+      <option value="">Alle Unternehmen (Übersicht)</option>
+      {% for c in companies %}
+      <option value="company-{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <input id="searchInput" type="text" placeholder="Nach Unternehmen / Branche filtern …" oninput="applySearch()">
+  </div>
+
+  <div id="overview-section" class="company-detail active">
+    <div class="card">
+      <h2>Übersicht: Punktekontingente je Unternehmen</h2>
+      <table>
+        <tr>
+          <th>Unternehmen</th><th>Branche</th><th>Kontingent</th><th>Verbraucht</th>
+          <th style="min-width:160px">Punktestand</th><th>Übrig</th><th>Events</th><th>Workshops</th>
+        </tr>
+        {% for c in companies %}
+        <tr class="overview-row" data-search="{{ c.name|lower }} {{ c.industry|lower }}">
+          <td><span class="company-link" onclick="showCompany({{ c.id }})">{{ c.name }}</span></td>
+          <td>{{ c.industry }}</td>
+          <td>{{ c.points_contingent }} P</td>
+          <td>{{ c.points_used }} P</td>
+          <td>
+            <div class="bar-wrap"><div class="bar {{ 'bad' if c.points_used / c.points_contingent > 0.9 else ('warn' if c.points_used / c.points_contingent > 0.7 else '') }}"
+              style="width:{{ (100 * c.points_used / c.points_contingent)|round(1) }}%"></div></div>
+          </td>
+          <td class="pct">{{ c.points_contingent - c.points_used }} P</td>
+          <td>{{ c.bookings }}</td>
+          <td>{{ c.workshops or 0 }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  {% for cid, rep in reports.items() %}
+  <div id="company-{{ cid }}" class="company-detail">
+    <div class="card">
+      <h2>{{ rep.company.name }}</h2>
+      <p class="muted" style="margin:0 0 16px">{{ rep.company.industry }} · Ansprechpartner: {{ rep.company.contact }}</p>
+      <div class="detail-kpis">
+        <div class="kpi"><div class="v">{{ rep.workshop_count }}</div><div class="l">Workshops (gehostet + Gäste)</div></div>
+        <div class="kpi"><div class="v">{{ rep.points_used }} P</div><div class="l">Punkte verbraucht</div></div>
+        <div class="kpi"><div class="v">{{ rep.points_left }} P</div><div class="l">Punkte übrig</div></div>
+        <div class="kpi"><div class="v">{{ rep.event_count }}</div><div class="l">Events insgesamt</div></div>
+        <div class="kpi"><div class="v">{{ rep.hosted_count }}</div><div class="l">Als Gastgeber</div></div>
+      </div>
+      <a class="btn" href="/pdf/company/{{ cid }}" style="margin-bottom:20px">PDF-Bericht: {{ rep.company.name }}</a>
+
+      <h2 style="margin-top:10px">Gebuchte Events &amp; Workshops</h2>
+      <table>
+        <tr><th>Datum</th><th>Event</th><th>Typ</th><th>Punkte</th><th>Teilnehmende andere Unternehmen</th></tr>
+        {% for e in rep.events %}
+        <tr>
+          <td>{{ e.date }}</td>
+          <td>{{ e.title }}</td>
+          <td>{{ e.type }}</td>
+          <td>{{ e.point_cost }} P</td>
+          <td>{% for g in e.guests %}<span class="badge">{{ g }}</span>{% else %}<span class="muted">keine Gäste</span>{% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <h2 style="margin-top:26px">Teilnahme an Events anderer Unternehmen</h2>
+      {% if rep.other_events %}
+      <table>
+        <tr><th>Datum</th><th>Event</th><th>Gastgeber</th><th>Typ</th><th>Punkte</th></tr>
+        {% for e in rep.other_events %}
+        <tr>
+          <td>{{ e.date }}</td>
+          <td>{{ e.title }}</td>
+          <td>{{ e.host_name }}</td>
+          <td>{{ e.type }}</td>
+          <td>{{ e.point_cost }} P</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p class="muted">Keine Teilnahmen an Events anderer Unternehmen.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="footnote">Demo-Dashboard · alle Daten fiktiv · localhost-only</div>
+</main>
+
+<script>
+function showCompany(id) {
+  document.getElementById('companySelect').value = 'company-' + id;
+  applyFilter();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function applyFilter() {
+  const val = document.getElementById('companySelect').value;
+  document.querySelectorAll('.company-detail').forEach(s => s.classList.remove('active'));
+  document.getElementById(val || 'overview-section').classList.add('active');
+  if (val) {
+    document.querySelectorAll('.overview-row').forEach(r => r.style.display = '');
+    document.getElementById('searchInput').value = '';
+  }
+}
+function applySearch() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  document.getElementById('companySelect').value = '';
+  document.querySelectorAll('.company-detail').forEach(s => s.classList.remove('active'));
+  document.getElementById('overview-section').classList.add('active');
+  document.querySelectorAll('.overview-row').forEach(r => {
+    r.style.display = (!q || r.dataset.search.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
